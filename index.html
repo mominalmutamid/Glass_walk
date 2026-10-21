@@ -56,6 +56,11 @@ svg.v{width:100%;height:auto;display:block}
 .acts{display:flex;gap:10px}.acts .btn{flex:1;padding:13px 10px}
 .up{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--a);cursor:pointer;margin-bottom:12px}.up input{display:none}.up .i{width:16px;height:16px}
 .f input[type=file]{padding:10px;font-size:14px}details.pst{margin-bottom:12px;font-size:13px;color:var(--tx2)}details.pst summary{cursor:pointer;margin-bottom:8px}.pst textarea{width:100%;padding:12px;border-radius:var(--rs);border:1px solid var(--ln);background:var(--p);color:var(--tx);font:inherit;font-size:14px}
+#map{height:340px;border-radius:var(--rs);overflow:hidden;background:var(--p)}
+.mk{display:block;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #8b7cff;box-shadow:0 1px 6px rgba(0,0,0,.4)}.mk.s{background:#3fd9b6;border-color:#fff}.mk.e{background:#8b7cff;border-color:#fff}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .leaflet-tile-pane{filter:none}}
+.leaflet-control-attribution{font-size:10px}.pill.sm{font:inherit;font-size:12px;color:var(--tx);cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
 .toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);opacity:0;background:var(--p2);border:1px solid var(--ln);backdrop-filter:blur(10px);padding:12px 18px;border-radius:var(--rs);font-size:14px;font-weight:500;transition:all .25s;pointer-events:none;z-index:60}.toast.on{opacity:1;transform:translate(-50%,0)}
 .bd{display:flex;gap:18px;align-items:center}.fig{width:104px;flex-shrink:0}.fig path,.fig circle{fill:none;stroke:var(--g1);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
@@ -109,10 +114,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 </div>
 
 <div class="tab" id="t-routes">
+<div class="card"><h2>Plan a route</h2><div class="note" id="mi">Loading map…</div><div id="map"></div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="pill sm" onclick="locate()">My location</button><button class="pill sm" onclick="undo()">Undo</button><button class="pill sm" onclick="clr()">Clear</button><button class="btn" style="margin-left:auto;padding:10px 18px" onclick="openSave()">Save route</button></div></div>
+<div class="card"><h2>Saved routes</h2><div id="sr"></div></div>
 <div class="card"><h2>Journey</h2><div class="note" id="jn"></div>
 <svg class="v" viewBox="0 0 320 420"><path id="jp" class="sg" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><path id="jl" class="sg lit" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><g id="jw"></g></svg></div>
 <div class="card"><h2>My routes</h2><div id="myr"></div></div>
-<div class="card" id="lrc" style="display:none"><h2>Latest imported route</h2><div class="note" id="lrn"></div><svg class="v" id="lr" viewBox="0 0 320 220"></svg></div>
+<div class="card" id="lrc" style="display:none"><h2>Latest imported route</h2><div class="note" id="lrn"></div><button class="pill sm" style="margin-bottom:10px" onclick="showOnMap()">Show on map</button><svg class="v" id="lr" viewBox="0 0 320 220"></svg></div>
 </div>
 </div>
 <div class="dock"><button class="btn" onclick="openWalk(null)"><svg class="i"><use href="#i-plus"/></svg>Log walk</button></div>
@@ -131,15 +139,21 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 <div class="ov" id="oh"><div class="sheet" role="dialog" aria-modal="true"><h3 id="ht">Log height</h3>
 <div class="f"><label>Date<input id="hd" type="date"></label><label>Height, cm<input id="hc" type="number" inputmode="decimal" step="0.1" min="50" max="250" placeholder="170"></label></div>
 <div class="acts" style="margin-top:14px"><button class="btn sec" onclick="closeAll()">Cancel</button><button class="btn del" id="hdel" onclick="delH()">Delete</button><button class="btn" onclick="saveH()">Save</button></div></div></div>
-<div class="ov" id="os"><div class="sheet" role="dialog" aria-modal="true"><h3>Sync</h3><p id="sx" style="font-size:14px;line-height:1.5;margin-bottom:16px"></p>
+<div class="ov" id="os"><div class="sheet" role="dialog" aria-modal="true"><h3>Account and data</h3><p id="sx" style="font-size:14px;line-height:1.5;margin-bottom:16px"></p>
+<button class="btn sec" style="width:100%;margin-bottom:12px" onclick="exportData()">Export backup</button>
+<div class="f"><label>Import a backup file<input id="bi" type="file" accept=".json,application/json"></label></div>
+<p class="note" style="margin:6px 0">Week starts on</p><div class="seg" id="wsg" style="margin-bottom:16px"><button data-w="6">Sat</button><button data-w="0">Sun</button><button data-w="1">Mon</button></div>
 <div class="acts"><button class="btn sec" onclick="closeAll()">Close</button><button class="btn" id="sgo">Sign in with Google</button></div></div></div>
+<div class="ov" id="orr"><div class="sheet" role="dialog" aria-modal="true"><h3>Save route</h3><div class="f"><label>Route name<input id="rn" placeholder="Morning loop"></label></div><p class="hint" id="rh"></p>
+<div class="acts"><button class="btn sec" onclick="closeAll()">Cancel</button><button class="btn" onclick="saveRoute()">Save</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
-const WS=1,SK='glass_walks_v2',WK='glass_weights_v2',$=id=>document.getElementById(id),pad=n=>String(n).padStart(2,'0');
-let walks=[],weights=[],heights=[],cut='who',tab='today',per='d',cw=null,path=null;
-try{walks=JSON.parse(localStorage.getItem(SK)||'[]');weights=JSON.parse(localStorage.getItem(WK)||'[]');heights=JSON.parse(localStorage.getItem('glass_heights_v2')||'[]');cut=localStorage.getItem('glass_cut')||'who'}catch(e){}
-const store=()=>{try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights));localStorage.setItem('glass_cut',cut)}catch(e){}window.syncPush&&window.syncPush()};
+let WS=1;try{WS=+(localStorage.getItem('glass_ws')||1)}catch(e){}
+const SK='glass_walks_v2',WK='glass_weights_v2',$=id=>document.getElementById(id),pad=n=>String(n).padStart(2,'0');
+let walks=[],weights=[],heights=[],routes=[],cut='who',tab='today',per='d',cw=null,path=null;
+try{walks=JSON.parse(localStorage.getItem(SK)||'[]');weights=JSON.parse(localStorage.getItem(WK)||'[]');heights=JSON.parse(localStorage.getItem('glass_heights_v2')||'[]');cut=localStorage.getItem('glass_cut')||'who';routes=JSON.parse(localStorage.getItem('glass_routes_v2')||'[]')}catch(e){}
+const store=()=>{try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights));localStorage.setItem('glass_cut',cut);localStorage.setItem('glass_routes_v2',JSON.stringify(routes))}catch(e){}window.syncPush&&window.syncPush()};
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const prs=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
 const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
@@ -199,9 +213,10 @@ function render(){
   $('wlist').innerHTML=[...ws2].reverse().slice(0,8).map(w=>'<button class="row" onclick="openW('+w.id+')"><b>'+fd(prs(w.date),{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b><b>'+r1(w.kg)+' kg</b></button>').join('')||'<div class="empty">No entries yet.</div>';
   const g={};walks.filter(w=>w.route).forEach(w=>{const r=g[w.route]=g[w.route]||{n:0,km:0,p:null,d:''};r.n++;r.km+=w.km||0;if(w.km>0){const p=w.min/w.km;if(r.p==null||p<r.p)r.p=p}if(w.date>r.d)r.d=w.date});
   $('myr').innerHTML=Object.keys(g).sort((a,b)=>g[b].n-g[a].n).map(k=>'<div class="row" style="cursor:default"><div><b>'+esc(k)+'</b><small>'+g[k].n+'× · '+r1(g[k].km)+' km total · last '+fd(prs(g[k].d),{day:'numeric',month:'short'})+'</small></div><b>'+(g[k].p?pace(g[k].p,1)+' best':'')+'</b></div>').join('')||'<div class="empty">Add a route name when logging a walk and your routes will appear here.</div>';
-  $('rts').innerHTML=Object.keys(g).map(k=>'<option value="'+esc(k)+'">').join('');
+  $('rts').innerHTML=[...new Set([...Object.keys(g),...routes.map(r=>r.name)])].map(k=>'<option value="'+esc(k)+'">').join('');
+  $('sr').innerHTML=routes.length?[...routes].reverse().map(r=>'<div class="row" style="cursor:default;gap:8px"><div style="flex:1;cursor:pointer" onclick="showRoute('+r.id+')"><b>'+esc(r.name)+'</b><small>'+r1(r.km)+' km · about '+dur(r.min)+'</small></div><button class="pill sm" onclick="logRoute('+r.id+')">Log walk</button><button class="pill sm" onclick="delRoute('+r.id+')">Delete</button></div>').join(''):'<div class="empty">No saved routes yet. Plan one on the map and tap Save route.</div>';
   const lp=[...walks].filter(w=>w.path).sort((a,b)=>b.date.localeCompare(a.date))[0];$('lrc').style.display=lp?'':'none';if(lp)route(lp);
-  bmi();if(tab==='routes')journey(tk2);
+  bmi();if(tab==='routes'){journey(tk2);mapInit()}
 }
 function bmi(){
   const H=[...heights].sort((a,b)=>a.date.localeCompare(b.date)),W=[...weights].sort((a,b)=>a.date.localeCompare(b.date)),h=H[H.length-1],w=W[W.length-1],c=cut==='asia'?[18.5,23,25]:[18.5,25,30];
@@ -250,7 +265,7 @@ function openW(id){const w=id?weights.find(x=>x.id===id):null;cw=w?w.id:0;$('wd'
 function saveW(){const kg=parseFloat($('wk2').value),d=$('wd').value;if(!d||!(kg>0)){toast('Enter a date and weight');return}
   weights=weights.filter(w=>w.id!==cw);weights.push({id:cw||Date.now(),date:d,kg:Math.round(kg*10)/10});store();closeAll();render();toast('Weight saved')}
 function delW(){weights=weights.filter(w=>w.id!==cw);store();closeAll();render();toast('Entry deleted')}
-function closeAll(){$('ov').classList.remove('on');$('ow').classList.remove('on');$('oh').classList.remove('on');$('os').classList.remove('on')}
+function closeAll(){$('ov').classList.remove('on');$('ow').classList.remove('on');$('oh').classList.remove('on');$('os').classList.remove('on');$('orr').classList.remove('on')}
 function openH(id){const h=id?heights.find(x=>x.id===id):null;cw=h?h.id:0;$('hd').value=h?h.date:ymd(today());$('hd').max=ymd(today());$('hc').value=h?h.cm:'';$('hdel').style.display=h?'':'none';$('ht').textContent=h?'Edit height':'Log height';$('oh').classList.add('on');setTimeout(()=>$('hc').focus(),50)}
 function saveH(){const cm=parseFloat($('hc').value),d=$('hd').value;if(!d||!(cm>=50&&cm<=250)){toast('Enter a height between 50 and 250 cm');return}heights=heights.filter(x=>x.id!==cw);heights.push({id:cw||Date.now(),date:d,cm:Math.round(cm*10)/10});store();closeAll();render();toast('Height saved')}
 function delH(){heights=heights.filter(x=>x.id!==cw);store();closeAll();render();toast('Entry deleted')}
@@ -267,11 +282,65 @@ function readGpx(txt){try{
 ['min','km','dt'].forEach(i=>$(i).addEventListener('input',hint));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+tab));render();scrollTo(0,0)});
 document.querySelectorAll('#per button').forEach(b=>b.onclick=()=>{per=b.dataset.p;document.querySelectorAll('#per button').forEach(x=>x.classList.toggle('on',x===b));render()});
-[$('ov'),$('ow'),$('oh'),$('os')].forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeAll()}));
+[$('ov'),$('ow'),$('oh'),$('os'),$('orr')].forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeAll()}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
 let tt;function toast(m){const e=$('toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2400)}
 render();
-window.App={get:()=>({walks,weights,heights}),set:(c,v)=>{if(c==='walks')walks=v;else if(c==='weights')weights=v;else heights=v;try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights))}catch(e){}render()}};
+window.App={get:()=>({walks,weights,heights,routes}),set:(c,v)=>{if(c==='walks')walks=v;else if(c==='weights')weights=v;else if(c==='routes')routes=v;else heights=v;try{localStorage.setItem('glass_routes_v2',JSON.stringify(routes));localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights))}catch(e){}render()}};
+function exportData(){const d={app:'glass-walk',v:2,exported:new Date().toISOString(),walks,weights,heights,routes};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download='glass-walk-backup-'+ymd(today())+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Backup downloaded')}
+$('bi').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{
+  const d=JSON.parse(rd.result);if(d.app!=='glass-walk')throw 0;let n=0;
+  [['walks',walks,'min'],['weights',weights,'kg'],['heights',heights,'cm'],['routes',routes,'km']].forEach(([k,arr,f2])=>{const have=new Set(arr.map(x=>String(x.id)));
+    (Array.isArray(d[k])?d[k]:[]).forEach(x=>{if(x&&x.id!=null&&typeof x.date==='string'&&typeof x[f2]==='number'&&!have.has(String(x.id))){arr.push(x);n++}})});
+  store();render();toast(n+' items imported')}catch(err){toast('That isn’t a Glass Walk backup')}};rd.readAsText(f);e.target.value=''});
+function wsUi(){document.querySelectorAll('#wsg button').forEach(b=>b.classList.toggle('on',+b.dataset.w===WS))}
+document.querySelectorAll('#wsg button').forEach(b=>b.onclick=()=>{WS=+b.dataset.w;try{localStorage.setItem('glass_ws',WS)}catch(e){}wsUi();render()});
+wsUi();
+// ---- Real map (Leaflet + OpenStreetMap tiles, community foot-routing server) ----
+// To switch routing provider later, replace routeUrl() and the response handling in plan().
+const routeUrl=p=>'https://routing.openstreetmap.de/routed-foot/route/v1/foot/'+p.map(q=>q[1].toFixed(6)+','+q[0].toFixed(6)).join(';')+'?overview=full&geometries=geojson';
+let map,lay,pts=[],res=null,rid=0,lf=null;
+const simp=a=>{const s=Math.max(1,Math.floor(a.length/300));return a.filter((_,i)=>i%s===0||i===a.length-1).map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)])};
+function mapInit(){
+  if(map){setTimeout(()=>map.invalidateSize(),50);return}
+  if(window.L){buildMap();return}
+  if(lf)return;lf=1;
+  const c=document.createElement('link');c.rel='stylesheet';c.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(c);
+  const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  sc.onload=()=>{lf=null;buildMap()};sc.onerror=()=>{lf=null;$('mi').textContent='The map needs an internet connection. Open this tab again when you are online.'};document.head.appendChild(sc)}
+function buildMap(){
+  map=L.map('map').setView([20,0],2);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(map);
+  lay=L.layerGroup().addTo(map);
+  map.on('click',e=>{pts.push([+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5)]);plan()});
+  const r=routes[routes.length-1];if(r)showRoute(r.id,true);else info()}
+function draw(line){
+  lay.clearLayers();
+  pts.forEach((p,i)=>L.marker(p,{icon:L.divIcon({className:'',html:'<i class="mk'+(i===0?' s':i===pts.length-1?' e':'')+'"></i>',iconSize:[16,16]})}).addTo(lay));
+  if(line&&line.length){const l=L.polyline(line,{color:'#8b7cff',weight:5,opacity:.9}).addTo(lay);map.fitBounds(l.getBounds(),{padding:[30,30]})}}
+function info(n){$('mi').textContent=pts.length<2&&!res?(pts.length?'Tap the map to add the next point.':'Tap My location, then tap the map to set a start, waypoints and an end.'):pts.length+' points · '+r1(res.km)+' km · about '+dur(res.min)+(n||'')}
+async function plan(){
+  const my=++rid;draw(null);
+  if(pts.length<2){res=null;info();return}
+  $('mi').textContent='Finding a walking route…';let line,km=0,min=0,note='';
+  try{const j=await (await fetch(routeUrl(pts))).json(),q=j.routes[0];line=q.geometry.coordinates.map(c=>[c[1],c[0]]);km=q.distance/1000;min=q.duration/60}
+  catch(e){line=pts.slice();for(let i=1;i<pts.length;i++)km+=hv({la:pts[i-1][0],lo:pts[i-1][1]},{la:pts[i][0],lo:pts[i][1]});min=km/5*60;note=' (straight lines, the routing service is unavailable)'}
+  if(my!==rid)return;res={line,km,min,pts:pts.slice()};draw(line);info(note)}
+function undo(){if(!map)return;pts.pop();plan()}
+function clr(){if(!map)return;pts=[];plan()}
+function locate(){if(!map)return;navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],15),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000}):toast('Location is not available')}
+function showRoute(id,quiet){const r=routes.find(x=>x.id===id);if(!r||!map)return;rid++;pts=r.pts.map(p=>p.slice());res={line:r.line,km:r.km,min:r.min,pts:r.pts};draw(r.line);info();if(!quiet)$('map').scrollIntoView({behavior:'smooth',block:'center'})}
+function openSave(){if(!res){toast('Add at least two points first');return}$('rh').textContent=r1(res.km)+' km · about '+dur(res.min);$('rn').value='';$('orr').classList.add('on');setTimeout(()=>$('rn').focus(),50)}
+function saveRoute(){const n=$('rn').value.trim();if(!n){toast('Give the route a name');return}
+  routes.push({id:Date.now(),name:n,km:Math.round(res.km*100)/100,min:Math.round(res.min),pts:res.pts,line:simp(res.line)});store();closeAll();render();toast('Route saved')}
+function delRoute(id){routes=routes.filter(r=>r.id!==id);store();render();toast('Route deleted')}
+function logRoute(id){const r=routes.find(x=>x.id===id);if(!r)return;openWalk(null);$('rt').value=r.name;$('km').value=r.km;$('min').value=Math.round(r.min);hint()}
+function showOnMap(){const lp=[...walks].filter(w=>w.path).sort((a,b)=>b.date.localeCompare(a.date))[0];if(!lp||!map){toast('The map is not ready yet');return}
+  pts=[];res=null;rid++;lay.clearLayers();const l=L.polyline(lp.path,{color:'#3fd9b6',weight:5}).addTo(lay);map.fitBounds(l.getBounds(),{padding:[30,30]});
+  $('mi').textContent=(lp.route||'Imported walk')+' · '+r1(lp.km||0)+' km (imported GPX)';$('map').scrollIntoView({behavior:'smooth',block:'center'})}
+$('rt').addEventListener('change',()=>{const r=routes.find(x=>x.name.toLowerCase()===$('rt').value.trim().toLowerCase());if(r&&!$('km').value){$('km').value=r.km;hint()}});
 function openSync(){$('os').classList.add('on')}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
@@ -281,10 +350,11 @@ import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} f
 import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyB3C9DhIW0tWvFqutFhy3STOLcOuVNurz4",authDomain:"glass-walk-416eb.firebaseapp.com",projectId:"glass-walk-416eb",storageBucket:"glass-walk-416eb.firebasestorage.app",messagingSenderId:"263227289446",appId:"1:263227289446:web:0eba3eb33d81188c9462a7"});
 const auth=getAuth(app),db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
-const $=id=>document.getElementById(id),cols=['walks','weights','heights'],ser=x=>JSON.stringify(x,Object.keys(x).sort());
+const $=id=>document.getElementById(id),cols=['walks','weights','heights','routes'],ser=x=>JSON.stringify(x,Object.keys(x).sort());
 // Firestore cannot store arrays of arrays, so a walk's GPX path is saved as a JSON string.
-const enc=x=>{const o={...x};if(o.path){o.pathJson=JSON.stringify(o.path);delete o.path}return o};
-const dec=x=>{const o={...x};if(o.pathJson){try{o.path=JSON.parse(o.pathJson)}catch(e){}delete o.pathJson}return o};
+const JF=['path','line','pts'];
+const enc=x=>{const o={...x};JF.forEach(k=>{if(o[k]){o[k+'Json']=JSON.stringify(o[k]);delete o[k]}});return o};
+const dec=x=>{const o={...x};JF.forEach(k=>{if(o[k+'Json']){try{o[k]=JSON.parse(o[k+'Json'])}catch(e){}delete o[k+'Json']}});return o};
 let uid=null,unsubs=[],known={},seen={},st='',timer;
 const sk=()=>'glass_seen_'+uid;
 function loadSeen(){let s={};try{s=JSON.parse(localStorage.getItem(sk())||'{}')}catch(e){}cols.forEach(c=>{seen[c]=new Set(s[c]||[])})}
