@@ -79,7 +79,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 <svg id="topo" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
 <div class="app">
 <header><div class="mark"><img src="icon-192.png" alt="" width="40" height="40"></div><h1>Walk log</h1><div class="pill" id="range"></div><button class="pill" id="syncb" onclick="openSync()" style="font:inherit;font-size:12px;color:var(--tx);cursor:pointer">Sign in</button></header>
-<nav class="tabs"><button data-t="today" class="on">Today</button><button data-t="prog">Progress</button><button data-t="body">Body</button><button data-t="routes">Routes</button></nav>
+<nav class="tabs"><button data-t="today" class="on">Today</button><button data-t="prog">Progress</button><button data-t="body">Body</button><button data-t="routes">Explored</button></nav>
 
 <div class="tab on" id="t-today">
 <div class="card"><h2>This week</h2><div class="note" id="wk"></div><svg class="v" id="wr" viewBox="0 0 320 130"></svg></div>
@@ -110,6 +110,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 </div>
 
 <div class="tab" id="t-routes">
+<div class="card"><h2>Your territory</h2><div class="note" style="margin-bottom:12px">Every imported walk drawn together.</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="xf"><button data-v="all" class="on">All time</button><button data-v="year">This year</button><button data-v="30">30 days</button></div><div class="seg" id="xmd"><button data-v="paths" class="on">Paths</button><button data-v="sq">Squares</button></div></div>
+<canvas id="xc" style="width:100%;height:340px;border-radius:12px;display:block"></canvas>
+<div class="empty" id="xe" style="display:none">Import a GPX walk to see where you have been.</div>
+<p class="note" id="xn" style="margin:10px 0 0"></p></div>
+<div class="pan" id="p-x"></div>
 <div class="card"><h2>Journey</h2><div class="note" id="jn"></div>
 <svg class="v" viewBox="0 0 320 420"><path id="jp" class="sg" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><path id="jl" class="sg lit" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><g id="jw"></g></svg></div>
 <div class="card"><h2>My routes</h2><div id="myr"></div></div>
@@ -206,7 +212,7 @@ function render(){
   $('myr').innerHTML=Object.keys(g).sort((a,b)=>g[b].n-g[a].n).map(k=>'<div class="row" style="cursor:default"><div><b>'+esc(k)+'</b><small>'+g[k].n+'× · '+r1(g[k].km)+' km total · last '+fd(prs(g[k].d),{day:'numeric',month:'short'})+'</small></div><b>'+(g[k].p?pace(g[k].p,1)+' best':'')+'</b></div>').join('')||'<div class="empty">Add a route name when logging a walk and your routes will appear here.</div>';
   $('rts').innerHTML=Object.keys(g).map(k=>'<option value="'+esc(k)+'">').join('');
   const lp=[...walks].filter(w=>w.path).sort((a,b)=>b.date.localeCompare(a.date))[0];$('lrc').style.display=lp?'':'none';if(lp)route(lp);
-  bmi();if(tab==='routes')journey(tk2);
+  bmi();if(tab==='routes'){journey(tk2);explored()}
 }
 function bmi(){
   const H=[...heights].sort((a,b)=>a.date.localeCompare(b.date)),W=[...weights].sort((a,b)=>a.date.localeCompare(b.date)),h=H[H.length-1],w=W[W.length-1],c=cut==='asia'?[18.5,23,25]:[18.5,25,30];
@@ -273,7 +279,7 @@ function parseGpx(txt){
     km+=d;if(timed){mv+=dt;if(km>=nk){sp.push(+((mv-mvLast)/60).toFixed(2));mvLast=mv;nk++}}}
   const E=t.map(p=>p.e).filter(v=>v!=null&&!isNaN(v));let up=null;
   if(E.length>5){const S=E.map((_,i)=>{let a=0,c=0;for(let j=i-2;j<=i+2;j++)if(E[j]!=null){a+=E[j];c++}return a/c});up=0;for(let i=1;i<S.length;i++)if(S[i]>S[i-1])up+=S[i]-S[i-1];up=Math.round(up)}
-  const st=Math.max(1,Math.floor(t.length/120)),nm=x.querySelector('trk > name,metadata > name');
+  const st=Math.max(1,Math.floor(t.length/400)),nm=x.querySelector('trk > name,metadata > name');
   return{km,min:timed?mv/60:null,el:timed?(t[t.length-1].t-t[0].t)/60000:null,up,sp,name:nm?nm.textContent.trim():'',t0:timed?new Date(t[0].t).toISOString():'',date:timed?ymd(new Date(t[0].t)):null,
     path:t.filter((_,i)=>i%st===0||i===t.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)])}}
 function readGpx(txt){try{const g=parseGpx(txt);
@@ -310,6 +316,33 @@ $('bi').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;con
 function wsUi(){document.querySelectorAll('#wsg button').forEach(b=>b.classList.toggle('on',+b.dataset.w===WS))}
 document.querySelectorAll('#wsg button').forEach(b=>b.onclick=()=>{WS=+b.dataset.w;try{localStorage.setItem('glass_ws',WS)}catch(e){}wsUi();render()});
 wsUi();
+// ---- Explored: all walks drawn together, plus 100 m territory squares ----
+let xf='all',xm='paths';
+function xproj(){const A=walks.filter(w=>w.path&&w.path.length>1);if(!A.length)return null;
+  let sl=0,n=0;A.forEach(w=>w.path.forEach(p=>{sl+=p[0];n++}));const k=Math.cos(sl/n*Math.PI/180)*111320;
+  return A.map(w=>({w,p:w.path.map(q=>[q[1]*k,q[0]*110540])}))}
+function xcells(p){const c=new Set(),add=(x,y)=>c.add(Math.floor(x/100)+','+Math.floor(y/100));add(p[0][0],p[0][1]);
+  for(let i=1;i<p.length;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/30));for(let j=1;j<=n;j++)add(p[i-1][0]+dx*j/n,p[i-1][1]+dy*j/n)}return c}
+function explored(){
+  const cv=$('xc'),P=xproj();cv.style.display=P?'block':'none';$('xe').style.display=P?'none':'';
+  if(!P){$('p-x').innerHTML='';$('xn').textContent='';return}
+  const t=today(),from=xf==='30'?ymd(addD(t,-30)):xf==='year'?t.getFullYear()+'-01-01':'0000-00-00',wk=ymd(wst(t)),mo=ymd(t).slice(0,7)+'-01',first={},cnt={};
+  P.forEach(o=>{o.c=xcells(o.p);o.c.forEach(k=>{if(!(k in first)||o.w.date<first[k])first[k]=o.w.date;if(o.w.date>=from)cnt[k]=(cnt[k]||0)+1})});
+  const keys=Object.keys(cnt),fk=Object.keys(first);
+  $('p-x').innerHTML=[['Squares explored',keys.length],['Area covered',(keys.length*0.01).toFixed(2)+' km²'],['New this week',fk.filter(k=>first[k]>=wk).length],['New this month',fk.filter(k=>first[k]>=mo).length]].map(x=>'<div><span><small>'+x[0]+'</small><b>'+x[1]+'</b></span></div>').join('');
+  $('xn').textContent=xm==='sq'?'Each square is 100 m wide. Brighter squares are visited more often, and teal ones are new this week.':'Brighter lines are paths you repeat. Violet is older, teal is newer.';
+  const dpr=window.devicePixelRatio||1,cw=cv.clientWidth,ch=340;cv.width=cw*dpr;cv.height=ch*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);g.fillStyle='#12101c';g.fillRect(0,0,cw,ch);
+  const sel=P.filter(o=>o.w.date>=from);
+  if(!sel.length){g.fillStyle='#8a84a8';g.font='13px sans-serif';g.textAlign='center';g.fillText('No walks in this period',cw/2,ch/2);return}
+  let x0=1e12,x1=-1e12,y0=1e12,y1=-1e12;sel.forEach(o=>o.p.forEach(q=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])}));
+  const pad=24,s=Math.min((cw-2*pad)/Math.max(x1-x0,600),(ch-2*pad)/Math.max(y1-y0,600)),ox=(cw-(x1-x0)*s)/2,oy=(ch-(y1-y0)*s)/2,X=q=>ox+(q[0]-x0)*s,Y=q=>ch-oy-(q[1]-y0)*s;
+  if(xm==='sq'){keys.forEach(k=>{const a=k.split(',').map(Number),sz=Math.max(100*s-1,1);g.fillStyle=first[k]>=wk?'rgba(63,217,182,.85)':'rgba(139,124,255,'+Math.min(.3+.15*cnt[k],.95)+')';g.fillRect(ox+(a[0]*100-x0)*s+.5,ch-oy-((a[1]+1)*100-y0)*s+.5,sz,sz)})}
+  else{g.globalCompositeOperation='lighter';g.lineCap='round';g.lineJoin='round';
+    const ds=sel.map(o=>o.w.date).sort(),d0=prs(ds[0]),sp=(prs(ds[ds.length-1])-d0)||1;
+    [[7,.07],[2.2,.38]].forEach(l=>sel.forEach(o=>{const f=(prs(o.w.date)-d0)/sp;g.strokeStyle='rgba('+Math.round(139-76*f)+','+Math.round(124+93*f)+','+Math.round(255-73*f)+','+l[1]+')';g.lineWidth=l[0];
+      g.beginPath();o.p.forEach((q,i)=>i?g.lineTo(X(q),Y(q)):g.moveTo(X(q),Y(q)));g.stroke()}));g.globalCompositeOperation='source-over'}}
+document.querySelectorAll('#xf button,#xmd button').forEach(b=>b.onclick=()=>{if(b.parentNode.id==='xf')xf=b.dataset.v;else xm=b.dataset.v;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));explored()});
+addEventListener('resize',()=>{if(tab==='routes')explored()});
 function openSync(){$('os').classList.add('on')}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
