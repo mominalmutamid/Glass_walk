@@ -376,8 +376,11 @@ async function drawArt(){
   if(!trim){[[P[0],'#3fd9b6'],[P[P.length-1],'#8b7cff']].forEach(d=>{g.beginPath();g.arc(X(d[0]),Y(d[0]),15,0,6.2832);g.fillStyle=d[1];g.fill();g.lineWidth=5;g.strokeStyle='#fff';g.stroke()})}
   g.textAlign='left';g.fillStyle='#eef1f6';const title=artTitle(w);let fs=80;g.font='600 '+fs+'px '+F;while(g.measureText(title).width>900&&fs>36){fs-=4;g.font='600 '+fs+'px '+F}
   g.fillText(title,90,180);g.font='400 36px '+F;g.fillStyle='rgba(238,241,246,.6)';g.fillText(fd(prs(w.date),{day:'numeric',month:'long',year:'numeric'}),90,240);
-  [[90,kmFmt(w.km),'DISTANCE KM'],[315,dur(w.min),'TIME'],[540,pace(w.min,w.km),'PACE PER KM'],[790,w.km>0&&w.min>0?(w.km/(w.min/60)).toFixed(1):'–','AVG KM/H']].forEach(c=>{g.font='600 64px '+F;g.fillStyle='#eef1f6';g.fillText(c[1],c[0],1160);g.font='400 22px '+F;g.fillStyle='rgba(238,241,246,.5)';g.fillText(c[2],c[0],1204)});
-  if(im){g.save();try{g.filter='brightness(1.7) saturate(1.2)'}catch(e){}g.drawImage(im,90,1244,84,84);g.restore()}g.font='500 34px '+F;g.fillStyle='rgba(238,241,246,.85)';g.fillText('Glass Walk',im?194:90,1296)}
+  g.textAlign='center'; // four equal 225 px slots, each value and label centred, thin dividers between them
+  [[kmFmt(w.km),'DISTANCE KM'],[dur(w.min),'TIME'],[pace(w.min,w.km),'PACE PER KM'],[w.km>0&&w.min>0?(w.km/(w.min/60)).toFixed(1):'–','AVG KM/H']].forEach((c,i)=>{const cx=90+225*i+112.5;
+    g.font='600 64px '+F;g.fillStyle='#eef1f6';g.fillText(c[0],cx,1160);g.font='400 22px '+F;g.fillStyle='rgba(238,241,246,.5)';g.fillText(c[1],cx,1204);
+    if(i){g.fillStyle='rgba(255,255,255,.1)';g.fillRect(90+225*i-1,1100,2,116)}});g.textAlign='left';
+  if(im)g.drawImage(im,90,1252,60,60);g.font='500 30px '+F;g.fillStyle='rgba(238,241,246,.7)';g.fillText('Glass Walk',im?168:90,1292)}
 function saveArt(){$('ac').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='glass-walk-route-'+artW.date+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Image saved')},'image/png')}
 function shareArt(){$('ac').toBlob(async b=>{const f=new File([b],'glass-walk-route.png',{type:'image/png'});
   try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'My walk'});else toast('Sharing is not supported here. Use Save image.')}catch(e){}},'image/png')}
