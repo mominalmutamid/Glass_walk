@@ -285,7 +285,7 @@ function parseGpx(txt){
   const E=t.map(p=>p.e).filter(v=>v!=null&&!isNaN(v));let up=null;
   if(E.length>5){const S=E.map((_,i)=>{let a=0,c=0;for(let j=i-2;j<=i+2;j++)if(E[j]!=null){a+=E[j];c++}return a/c});up=0;for(let i=1;i<S.length;i++)if(S[i]>S[i-1])up+=S[i]-S[i-1];up=Math.round(up)}
   const st=Math.max(1,Math.floor(t.length/400)),nm=x.querySelector('trk > name,metadata > name');
-  return{km,min:timed?mv/60:null,el:timed?(t[t.length-1].t-t[0].t)/60000:null,up,sp,name:nm?nm.textContent.trim():'',t0:timed?new Date(t[0].t).toISOString():'',date:timed?ymd(new Date(t[0].t)):null,
+  return{km,min:timed?mv/60:null,el:timed?(t[t.length-1].t-t[0].t)/60000:null,up,sp,name:nm&&!/^\d{4}-\d{2}-\d{2}/.test(nm.textContent.trim())?nm.textContent.trim():'',t0:timed?new Date(t[0].t).toISOString():'',date:timed?ymd(new Date(t[0].t)):null,
     path:t.filter((_,i)=>i%st===0||i===t.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)])}}
 function readGpx(txt){try{const g=parseGpx(txt);
   $('km').value=g.km.toFixed(2);if(g.min)$('min').value=Math.round(g.min*10)/10;if(g.date)$('dt').value=g.date;
@@ -354,6 +354,9 @@ function openArt(){artW=walks.find(x=>x.id===cw);if(!artW||!artW.path){toast('Th
   $('ov').classList.remove('on');$('ash').style.display=navigator.canShare?'':'none';$('oa').classList.add('on');drawArt()}
 function trimPath(P,m){let tot=0;const cum=[0];for(let i=1;i<P.length;i++){tot+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);cum.push(tot)}
   const t=tot<500?tot*.15:m,r=P.filter((_,i)=>cum[i]>=t&&cum[i]<=tot-t);return r.length>1?r:P}
+function artTitle(w){const n=(w.route||'').trim();if(n&&!/^\d{4}-\d{2}-\d{2}/.test(n))return n;
+  const h=w.t0?new Date(w.t0).getHours():-1;return h<0?'Walk':h<5?'Night walk':h<12?'Morning walk':h<17?'Afternoon walk':h<21?'Evening walk':'Night walk'}
+const kmFmt=k=>k<1?(Math.round(k*100)/100).toFixed(2):r1(k);
 async function drawArt(){
   const w=artW;if(!w)return;
   try{if(document.fonts&&document.fonts.load)await document.fonts.load('600 40px Inter')}catch(e){}
@@ -371,10 +374,10 @@ async function drawArt(){
   [[26,.08],[12,.22],[6,1]].forEach(l=>{g.globalAlpha=l[1];g.lineWidth=l[0];g.beginPath();P.forEach((q,i)=>i?g.lineTo(X(q),Y(q)):g.moveTo(X(q),Y(q)));g.stroke()});
   g.globalAlpha=1;
   if(!trim){[[P[0],'#3fd9b6'],[P[P.length-1],'#8b7cff']].forEach(d=>{g.beginPath();g.arc(X(d[0]),Y(d[0]),15,0,6.2832);g.fillStyle=d[1];g.fill();g.lineWidth=5;g.strokeStyle='#fff';g.stroke()})}
-  g.textAlign='left';g.fillStyle='#eef1f6';const title=w.route||'Walk';let fs=80;g.font='600 '+fs+'px '+F;while(g.measureText(title).width>900&&fs>36){fs-=4;g.font='600 '+fs+'px '+F}
+  g.textAlign='left';g.fillStyle='#eef1f6';const title=artTitle(w);let fs=80;g.font='600 '+fs+'px '+F;while(g.measureText(title).width>900&&fs>36){fs-=4;g.font='600 '+fs+'px '+F}
   g.fillText(title,90,180);g.font='400 36px '+F;g.fillStyle='rgba(238,241,246,.6)';g.fillText(fd(prs(w.date),{day:'numeric',month:'long',year:'numeric'}),90,240);
-  [[90,r1(w.km),'DISTANCE KM'],[420,dur(w.min),'TIME'],[740,pace(w.min,w.km),'PACE PER KM']].forEach(c=>{g.font='600 72px '+F;g.fillStyle='#eef1f6';g.fillText(c[1],c[0],1160);g.font='400 26px '+F;g.fillStyle='rgba(238,241,246,.5)';g.fillText(c[2],c[0],1208)});
-  if(im)g.drawImage(im,90,1252,60,60);g.font='500 30px '+F;g.fillStyle='rgba(238,241,246,.7)';g.fillText('Glass Walk',im?168:90,1292)}
+  [[90,kmFmt(w.km),'DISTANCE KM'],[315,dur(w.min),'TIME'],[540,pace(w.min,w.km),'PACE PER KM'],[790,w.km>0&&w.min>0?(w.km/(w.min/60)).toFixed(1):'–','AVG KM/H']].forEach(c=>{g.font='600 64px '+F;g.fillStyle='#eef1f6';g.fillText(c[1],c[0],1160);g.font='400 22px '+F;g.fillStyle='rgba(238,241,246,.5)';g.fillText(c[2],c[0],1204)});
+  if(im){g.save();try{g.filter='brightness(1.7) saturate(1.2)'}catch(e){}g.drawImage(im,90,1244,84,84);g.restore()}g.font='500 34px '+F;g.fillStyle='rgba(238,241,246,.85)';g.fillText('Glass Walk',im?194:90,1296)}
 function saveArt(){$('ac').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='glass-walk-route-'+artW.date+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Image saved')},'image/png')}
 function shareArt(){$('ac').toBlob(async b=>{const f=new File([b],'glass-walk-route.png',{type:'image/png'});
   try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'My walk'});else toast('Sharing is not supported here. Use Save image.')}catch(e){}},'image/png')}
