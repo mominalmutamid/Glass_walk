@@ -275,18 +275,29 @@ const hv=(a,b)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(b.la-a.la),dn=r(b.lo-a.lo)
 function gpxText(){const tx=$('gt').value.trim();if(tx)readGpx(tx);else toast('Paste the GPX text first')}
 function parseGpx(txt){
   const x=new DOMParser().parseFromString(txt,'application/xml');
-  let q=x.querySelectorAll('trkpt');if(!q.length)q=x.querySelectorAll('rtept');
-  const t=[...q].map(n=>{const e=n.querySelector('ele'),tm=n.querySelector('time');return{la:+n.getAttribute('lat'),lo:+n.getAttribute('lon'),e:e?parseFloat(e.textContent):null,t:tm?Date.parse(tm.textContent):NaN}});
-  if(t.length<2||t.some(p=>isNaN(p.la)||isNaN(p.lo)))throw 0;
-  const timed=t.every(p=>!isNaN(p.t));let km=0,mv=0,mvLast=0,nk=1;const sp=[];
-  for(let i=1;i<t.length;i++){const d=hv(t[i-1],t[i]),dt=timed?(t[i].t-t[i-1].t)/1000:0;
-    if(timed&&(dt<=0||d/dt<0.5))continue; // paused, standing still, or a repeated timestamp
-    km+=d;if(timed){mv+=dt;if(km>=nk){sp.push(+((mv-mvLast)/60).toFixed(2));mvLast=mv;nk++}}}
-  const E=t.map(p=>p.e).filter(v=>v!=null&&!isNaN(v));let up=null;
-  if(E.length>5){const S=E.map((_,i)=>{let a=0,c=0;for(let j=i-2;j<=i+2;j++)if(E[j]!=null){a+=E[j];c++}return a/c});up=0;for(let i=1;i<S.length;i++)if(S[i]>S[i-1])up+=S[i]-S[i-1];up=Math.round(up)}
-  const st=Math.max(1,Math.floor(t.length/400)),nm=x.querySelector('trk > name,metadata > name');
-  return{km,min:timed?mv/60:null,el:timed?(t[t.length-1].t-t[0].t)/60000:null,up,sp,name:nm&&!/^\d{4}-\d{2}-\d{2}/.test(nm.textContent.trim())?nm.textContent.trim():'',t0:timed?new Date(t[0].t).toISOString():'',date:timed?ymd(new Date(t[0].t)):null,
-    path:t.filter((_,i)=>i%st===0||i===t.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)])}}
+  const pt=n=>{const e=n.querySelector('ele'),tm=n.querySelector('time');return{la:+n.getAttribute('lat'),lo:+n.getAttribute('lon'),e:e?parseFloat(e.textContent):null,t:tm?Date.parse(tm.textContent):NaN}};
+  let G=[...x.querySelectorAll('trkseg')].map(sg=>[...sg.querySelectorAll('trkpt')].map(pt)).filter(a=>a.length);
+  if(!G.length){const r=[...x.querySelectorAll('rtept')].map(pt);if(r.length)G=[r]}
+  const all=G.flat();
+  if(all.length<2||all.some(p=>isNaN(p.la)||isNaN(p.lo)))throw 0;
+  const timed=all.every(p=>!isNaN(p.t));
+  // Each segment (a pause starts a new one) is measured on its own, so no distance or time is added across a pause.
+  // hv() returns km, so d is converted to metres. Steps faster than MAXV m/s are GPS glitches and are dropped.
+  let m=0,mv=0,mvLast=0,nk=1,act=0;const sp=[],keep=[],MAXV=5;
+  G.forEach(seg=>{let last=seg[0];keep.push(last);if(timed)act+=(seg[seg.length-1].t-seg[0].t)/1000;
+    for(let i=1;i<seg.length;i++){const p=seg[i],d=hv(last,p)*1000;
+      if(!timed){keep.push(p);m+=d;last=p;continue}
+      const dt=(p.t-last.t)/1000;if(dt<=0)continue;const v=d/dt;
+      if(v>MAXV)continue;
+      keep.push(p);last=p;
+      if(v<0.5)continue; // standing still
+      m+=d;mv+=dt;if(m>=nk*1000){sp.push(+((mv-mvLast)/60).toFixed(2));mvLast=mv;nk++}}});
+  // Climb: smooth the altitude, then only count rises of 3 m or more from the lowest point so GPS noise adds nothing.
+  const E=keep.map(p=>p.e).filter(v=>v!=null&&!isNaN(v));let up=null;
+  if(E.length>5){const S=E.map((_,i)=>{let a=0,c=0;for(let j=Math.max(0,i-7);j<=Math.min(E.length-1,i+7);j++){a+=E[j];c++}return a/c});up=0;let lo=S[0];for(const v of S){if(v<lo)lo=v;else if(v-lo>=3){up+=v-lo;lo=v}}up=Math.round(up)}
+  const st=Math.max(1,Math.floor(keep.length/400)),nm=x.querySelector('trk > name,metadata > name');
+  return{km:m/1000,min:timed?mv/60:null,el:timed?act/60:null,up,sp,name:nm&&!/^\d{4}-\d{2}-\d{2}/.test(nm.textContent.trim())?nm.textContent.trim():'',t0:timed?new Date(all[0].t).toISOString():'',date:timed?ymd(new Date(all[0].t)):null,
+    path:keep.filter((_,i)=>i%st===0||i===keep.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)])}}
 function readGpx(txt){try{const g=parseGpx(txt);
   $('km').value=g.km.toFixed(2);if(g.min)$('min').value=Math.round(g.min*10)/10;if(g.date)$('dt').value=g.date;
   if(g.name&&!$('rt').value)$('rt').value=g.name;path=g.path;
