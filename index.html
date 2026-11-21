@@ -56,11 +56,7 @@ svg.v{width:100%;height:auto;display:block}
 .acts{display:flex;gap:10px}.acts .btn{flex:1;padding:13px 10px}
 .up{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--a);cursor:pointer;margin-bottom:12px}.up input{display:none}.up .i{width:16px;height:16px}
 .f input[type=file]{padding:10px;font-size:14px}details.pst{margin-bottom:12px;font-size:13px;color:var(--tx2)}details.pst summary{cursor:pointer;margin-bottom:8px}.pst textarea{width:100%;padding:12px;border-radius:var(--rs);border:1px solid var(--ln);background:var(--p);color:var(--tx);font:inherit;font-size:14px}
-#map{height:340px;border-radius:var(--rs);overflow:hidden;background:var(--p)}
-.mk{display:block;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #8b7cff;box-shadow:0 1px 6px rgba(0,0,0,.4)}.mk.s{background:#3fd9b6;border-color:#fff}.mk.e{background:#8b7cff;border-color:#fff}
-.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9)}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .leaflet-tile-pane{filter:none}}
-.leaflet-control-attribution{font-size:10px}.pill.sm{font:inherit;font-size:12px;color:var(--tx);cursor:pointer}
+.hint{white-space:pre-line}
 button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
 .toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);opacity:0;background:var(--p2);border:1px solid var(--ln);backdrop-filter:blur(10px);padding:12px 18px;border-radius:var(--rs);font-size:14px;font-weight:500;transition:all .25s;pointer-events:none;z-index:60}.toast.on{opacity:1;transform:translate(-50%,0)}
 .bd{display:flex;gap:18px;align-items:center}.fig{width:104px;flex-shrink:0}.fig path,.fig circle{fill:none;stroke:var(--g1);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
@@ -83,7 +79,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 <svg id="topo" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
 <div class="app">
 <header><div class="mark"><img src="icon-192.png" alt="" width="40" height="40"></div><h1>Walk log</h1><div class="pill" id="range"></div><button class="pill" id="syncb" onclick="openSync()" style="font:inherit;font-size:12px;color:var(--tx);cursor:pointer">Sign in</button></header>
-<nav class="tabs"><button data-t="today" class="on">Today</button><button data-t="prog">Progress</button><button data-t="body">Body</button><button data-t="routes">Routes</button></nav>
+<nav class="tabs"><button data-t="today" class="on">Today</button><button data-t="prog">Progress</button><button data-t="body">Body</button><button data-t="routes">Explored</button></nav>
 
 <div class="tab on" id="t-today">
 <div class="card"><h2>This week</h2><div class="note" id="wk"></div><svg class="v" id="wr" viewBox="0 0 320 130"></svg></div>
@@ -114,13 +110,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 </div>
 
 <div class="tab" id="t-routes">
-<div class="card"><h2>Plan a route</h2><div class="note" id="mi">Loading map…</div><div id="map"></div>
-<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="pill sm" onclick="locate()">My location</button><button class="pill sm" onclick="undo()">Undo</button><button class="pill sm" onclick="clr()">Clear</button><button class="btn" style="margin-left:auto;padding:10px 18px" onclick="openSave()">Save route</button></div></div>
-<div class="card"><h2>Saved routes</h2><div id="sr"></div></div>
+<div class="card"><h2>Your territory</h2><div class="note" style="margin-bottom:12px">Every imported walk drawn together.</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="xf"><button data-v="all" class="on">All time</button><button data-v="year">This year</button><button data-v="30">30 days</button></div><div class="seg" id="xmd"><button data-v="paths" class="on">Paths</button><button data-v="sq">Squares</button></div></div>
+<canvas id="xc" style="width:100%;height:340px;border-radius:12px;display:block"></canvas>
+<div class="empty" id="xe" style="display:none">Import a GPX walk to see where you have been.</div>
+<p class="note" id="xn" style="margin:10px 0 0"></p></div>
+<div class="pan" id="p-x"></div>
 <div class="card"><h2>Journey</h2><div class="note" id="jn"></div>
 <svg class="v" viewBox="0 0 320 420"><path id="jp" class="sg" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><path id="jl" class="sg lit" d="M40 395C40 335 140 345 150 300S40 245 90 212 250 222 230 160 90 132 140 82 260 70 280 28"/><g id="jw"></g></svg></div>
 <div class="card"><h2>My routes</h2><div id="myr"></div></div>
-<div class="card" id="lrc" style="display:none"><h2>Latest imported route</h2><div class="note" id="lrn"></div><button class="pill sm" style="margin-bottom:10px" onclick="showOnMap()">Show on map</button><svg class="v" id="lr" viewBox="0 0 320 220"></svg></div>
+<div class="card" id="lrc" style="display:none"><h2>Latest imported route</h2><div class="note" id="lrn"></div><svg class="v" id="lr" viewBox="0 0 320 220"></svg></div>
 </div>
 </div>
 <div class="dock"><button class="btn" onclick="openWalk(null)"><svg class="i"><use href="#i-plus"/></svg>Log walk</button></div>
@@ -129,9 +128,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 <div class="f"><label>Date<input id="dt" type="date"></label><label>Minutes<input id="min" type="number" inputmode="decimal" min="1" placeholder="30"></label></div>
 <div class="f"><label>Distance, km<input id="km" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Optional"></label><label>Calories<input id="cal" type="number" inputmode="numeric" min="0" placeholder="Auto"></label></div>
 <div class="f"><label>Route name<input id="rt" list="rts" placeholder="Optional"></label></div><datalist id="rts"></datalist>
-<div class="f"><label>Import GPX file<input id="gx" type="file" accept=".gpx,application/gpx+xml,application/octet-stream,text/xml,application/xml"></label></div>
+<div class="f"><label>Import GPX files<input id="gx" type="file" multiple accept=".gpx,application/gpx+xml,application/octet-stream,text/xml,application/xml"></label></div>
 <details class="pst"><summary>Or paste GPX text</summary><textarea id="gt" rows="4" placeholder="Paste the full contents of a .gpx file"></textarea><button class="btn sec" style="width:100%;margin-top:8px" onclick="gpxText()">Import pasted text</button></details>
 <div class="hint" id="hint"></div>
+<button class="btn sec" id="ra" style="width:100%;margin-bottom:12px;display:none" onclick="openArt()">Create route art</button>
 <div class="acts"><button class="btn sec" onclick="closeAll()">Cancel</button><button class="btn del" id="dw" onclick="delWalk()">Delete</button><button class="btn" onclick="saveWalk()">Save</button></div></div></div>
 <div class="ov" id="ow"><div class="sheet" role="dialog" aria-modal="true"><h3 id="wt">Add weight</h3>
 <div class="f"><label>Date<input id="wd" type="date"></label><label>Weight, kg<input id="wk2" type="number" inputmode="decimal" step="0.1" min="1" placeholder="65.0"></label></div>
@@ -144,16 +144,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offs
 <div class="f"><label>Import a backup file<input id="bi" type="file" accept=".json,application/json"></label></div>
 <p class="note" style="margin:6px 0">Week starts on</p><div class="seg" id="wsg" style="margin-bottom:16px"><button data-w="6">Sat</button><button data-w="0">Sun</button><button data-w="1">Mon</button></div>
 <div class="acts"><button class="btn sec" onclick="closeAll()">Close</button><button class="btn" id="sgo">Sign in with Google</button></div></div></div>
-<div class="ov" id="orr"><div class="sheet" role="dialog" aria-modal="true"><h3>Save route</h3><div class="f"><label>Route name<input id="rn" placeholder="Morning loop"></label></div><p class="hint" id="rh"></p>
-<div class="acts"><button class="btn sec" onclick="closeAll()">Cancel</button><button class="btn" onclick="saveRoute()">Save</button></div></div></div>
+<div class="ov" id="oa"><div class="sheet" role="dialog" aria-modal="true"><h3>Route art</h3>
+<canvas id="ac" width="1080" height="1350" style="width:100%;max-width:380px;display:block;margin:0 auto 14px;border-radius:12px"></canvas>
+<label style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="at" checked onchange="drawArt()" style="width:18px;height:18px;flex-shrink:0">Hide the first and last 200 m so your start point stays private</label>
+<div class="acts"><button class="btn sec" onclick="closeAll()">Close</button><button class="btn sec" id="ash" onclick="shareArt()">Share</button><button class="btn" onclick="saveArt()">Save image</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 let WS=1;try{WS=+(localStorage.getItem('glass_ws')||1)}catch(e){}
 const SK='glass_walks_v2',WK='glass_weights_v2',$=id=>document.getElementById(id),pad=n=>String(n).padStart(2,'0');
-let walks=[],weights=[],heights=[],routes=[],cut='who',tab='today',per='d',cw=null,path=null;
-try{walks=JSON.parse(localStorage.getItem(SK)||'[]');weights=JSON.parse(localStorage.getItem(WK)||'[]');heights=JSON.parse(localStorage.getItem('glass_heights_v2')||'[]');cut=localStorage.getItem('glass_cut')||'who';routes=JSON.parse(localStorage.getItem('glass_routes_v2')||'[]')}catch(e){}
-const store=()=>{try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights));localStorage.setItem('glass_cut',cut);localStorage.setItem('glass_routes_v2',JSON.stringify(routes))}catch(e){}window.syncPush&&window.syncPush()};
+let walks=[],weights=[],heights=[],cut='who',tab='today',per='d',cw=null,path=null,ext=null;
+try{walks=JSON.parse(localStorage.getItem(SK)||'[]');weights=JSON.parse(localStorage.getItem(WK)||'[]');heights=JSON.parse(localStorage.getItem('glass_heights_v2')||'[]');cut=localStorage.getItem('glass_cut')||'who'}catch(e){}
+const store=()=>{try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights));localStorage.setItem('glass_cut',cut)}catch(e){}window.syncPush&&window.syncPush()};
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const prs=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
 const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
@@ -198,7 +200,7 @@ function render(){
   const td=walks.filter(w=>w.date===tk),tm=sum(td,'min'),tkm=sum(td,'km');
   $('p-today').innerHTML=pan([['pin','Distance today',r1(tkm)+' <u>km</u>'],['clock','Time',td.length?dur(tm):'–'],['gauge','Pace',pace(tm,tkm)+(tkm?' <u>/km</u>':'')],['flame','Calories',Math.round(sum(td,'cal'))+' <u>kcal</u>']]);
   const rec=[...walks].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,6);
-  $('recent').innerHTML=rec.length?rec.map(w=>'<button class="row" onclick="openWalk('+w.id+')"><div><b>'+fd(prs(w.date),{weekday:'short',day:'numeric',month:'short'})+'</b><small>'+dur(w.min)+(w.km?' · '+w.km+' km':'')+(w.route?' · '+esc(w.route):'')+'</small></div><b>'+pace(w.min,w.km)+'</b></button>').join(''):'<div class="empty">No walks yet. Tap Log walk, or a waypoint above, to add one.</div>';
+  $('recent').innerHTML=rec.length?rec.map(w=>'<button class="row" onclick="openWalk('+w.id+')"><div><b>'+fd(prs(w.date),{weekday:'short',day:'numeric',month:'short'})+'</b><small>'+dur(w.min)+(w.km?' · '+w.km+' km':'')+(w.up?' · '+w.up+' m up':'')+(w.route?' · '+esc(w.route):'')+'</small></div><b>'+pace(w.min,w.km)+'</b></button>').join(''):'<div class="empty">No walks yet. Tap Log walk, or a waypoint above, to add one.</div>';
   const S=series(),ps=S.map(x=>({l:x.l,v:x.pace}));
   chart($('c-km'),S.map(x=>({l:x.l,v:x.km})),v=>r1(v),true);chart($('c-cal'),S.map(x=>({l:x.l,v:x.cal})),v=>Math.round(v),true);
   chart($('c-pace'),S.map(x=>({l:x.l,v:x.pace})),v=>pace(v,1));
@@ -213,10 +215,9 @@ function render(){
   $('wlist').innerHTML=[...ws2].reverse().slice(0,8).map(w=>'<button class="row" onclick="openW('+w.id+')"><b>'+fd(prs(w.date),{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b><b>'+r1(w.kg)+' kg</b></button>').join('')||'<div class="empty">No entries yet.</div>';
   const g={};walks.filter(w=>w.route).forEach(w=>{const r=g[w.route]=g[w.route]||{n:0,km:0,p:null,d:''};r.n++;r.km+=w.km||0;if(w.km>0){const p=w.min/w.km;if(r.p==null||p<r.p)r.p=p}if(w.date>r.d)r.d=w.date});
   $('myr').innerHTML=Object.keys(g).sort((a,b)=>g[b].n-g[a].n).map(k=>'<div class="row" style="cursor:default"><div><b>'+esc(k)+'</b><small>'+g[k].n+'× · '+r1(g[k].km)+' km total · last '+fd(prs(g[k].d),{day:'numeric',month:'short'})+'</small></div><b>'+(g[k].p?pace(g[k].p,1)+' best':'')+'</b></div>').join('')||'<div class="empty">Add a route name when logging a walk and your routes will appear here.</div>';
-  $('rts').innerHTML=[...new Set([...Object.keys(g),...routes.map(r=>r.name)])].map(k=>'<option value="'+esc(k)+'">').join('');
-  $('sr').innerHTML=routes.length?[...routes].reverse().map(r=>'<div class="row" style="cursor:default;gap:8px"><div style="flex:1;cursor:pointer" onclick="showRoute('+r.id+')"><b>'+esc(r.name)+'</b><small>'+r1(r.km)+' km · about '+dur(r.min)+'</small></div><button class="pill sm" onclick="logRoute('+r.id+')">Log walk</button><button class="pill sm" onclick="delRoute('+r.id+')">Delete</button></div>').join(''):'<div class="empty">No saved routes yet. Plan one on the map and tap Save route.</div>';
+  $('rts').innerHTML=Object.keys(g).map(k=>'<option value="'+esc(k)+'">').join('');
   const lp=[...walks].filter(w=>w.path).sort((a,b)=>b.date.localeCompare(a.date))[0];$('lrc').style.display=lp?'':'none';if(lp)route(lp);
-  bmi();if(tab==='routes'){journey(tk2);mapInit()}
+  bmi();if(tab==='routes'){journey(tk2);explored()}
 }
 function bmi(){
   const H=[...heights].sort((a,b)=>a.date.localeCompare(b.date)),W=[...weights].sort((a,b)=>a.date.localeCompare(b.date)),h=H[H.length-1],w=W[W.length-1],c=cut==='asia'?[18.5,23,25]:[18.5,25,30];
@@ -246,18 +247,18 @@ function route(w){
   $('lrn').textContent=(w.route||'Imported walk')+' · '+fd(prs(w.date),{day:'numeric',month:'short'})+' · '+r1(w.km||0)+' km';
 }
 function openWalk(id,date){
-  const w=id?walks.find(x=>x.id===id):null;cw=w?w.id:0;path=w?w.path||null:null;
+  const w=id?walks.find(x=>x.id===id):null;cw=w?w.id:0;path=w?w.path||null:null;ext=w?{sp:w.sp,up:w.up,el:w.el,t0:w.t0}:null;
   $('st').textContent=w?'Edit walk':'Log walk';$('dt').value=w?w.date:(date||ymd(today()));$('dt').max=ymd(today());
   $('min').value=w?w.min:'';$('km').value=w&&w.km?w.km:'';$('cal').value=w&&!w.est&&w.cal?w.cal:'';$('rt').value=w?w.route||'':'';
-  $('dw').style.display=w?'':'none';hint();$('ov').classList.add('on');setTimeout(()=>$('min').focus(),50);
+  $('dw').style.display=w?'':'none';$('ra').style.display=w&&w.path?'':'none';hint();$('ov').classList.add('on');setTimeout(()=>$('min').focus(),50);
 }
 function hint(){const m=parseFloat($('min').value),k=parseFloat($('km').value),d=$('dt').value;let h='';
-  if(m>0&&k>0){h='Pace '+pace(m,k)+' /km';const c=estCal(m,k,d);h+=c?' · about '+c+' kcal if left blank':(wtOn(d)?'':' · add your weight in Body to estimate calories')}$('hint').textContent=h}
+  if(m>0&&k>0){h='Pace '+pace(m,k)+' /km';const c=estCal(m,k,d);h+=c?' · about '+c+' kcal if left blank':(wtOn(d)?'':' · add your weight in Body to estimate calories')}if(ext){if(ext.el&&m>0)h+=(h?' · ':'')+'Elapsed '+dur(ext.el)+', moving '+dur(m);if(ext.up!=null)h+=(h?' · ':'')+ext.up+' m climb';if(ext.sp)h+=(h?'\n':'')+'Km splits: '+ext.sp.map(v=>pace(v,1)).join(' · ')}$('hint').textContent=h}
 function saveWalk(){
   const m=parseFloat($('min').value),k=parseFloat($('km').value)||0,d=$('dt').value;
   if(!d||!(m>0)){toast('Enter a date and minutes walked');return}
   let c=parseFloat($('cal').value),est=false;if(!(c>=0)){c=estCal(m,k,d);est=true}
-  const o={id:cw||Date.now(),date:d,min:Math.round(m*10)/10,km:Math.round(k*100)/100,cal:c||0,est:est&&c!=null,route:$('rt').value.trim()};if(path)o.path=path;
+  const o={id:cw||Date.now(),date:d,min:Math.round(m*10)/10,km:Math.round(k*100)/100,cal:c||0,est:est&&c!=null,route:$('rt').value.trim()};if(path)o.path=path;if(ext)Object.keys(ext).forEach(k=>{if(ext[k]!==undefined)o[k]=ext[k]});
   walks=walks.filter(w=>w.id!==cw);walks.push(o);store();closeAll();render();toast('Walk saved');
 }
 function delWalk(){walks=walks.filter(w=>w.id!==cw);store();closeAll();render();toast('Walk deleted')}
@@ -265,82 +266,135 @@ function openW(id){const w=id?weights.find(x=>x.id===id):null;cw=w?w.id:0;$('wd'
 function saveW(){const kg=parseFloat($('wk2').value),d=$('wd').value;if(!d||!(kg>0)){toast('Enter a date and weight');return}
   weights=weights.filter(w=>w.id!==cw);weights.push({id:cw||Date.now(),date:d,kg:Math.round(kg*10)/10});store();closeAll();render();toast('Weight saved')}
 function delW(){weights=weights.filter(w=>w.id!==cw);store();closeAll();render();toast('Entry deleted')}
-function closeAll(){$('ov').classList.remove('on');$('ow').classList.remove('on');$('oh').classList.remove('on');$('os').classList.remove('on');$('orr').classList.remove('on')}
+function closeAll(){$('ov').classList.remove('on');$('ow').classList.remove('on');$('oh').classList.remove('on');$('os').classList.remove('on');$('oa').classList.remove('on')}
 function openH(id){const h=id?heights.find(x=>x.id===id):null;cw=h?h.id:0;$('hd').value=h?h.date:ymd(today());$('hd').max=ymd(today());$('hc').value=h?h.cm:'';$('hdel').style.display=h?'':'none';$('ht').textContent=h?'Edit height':'Log height';$('oh').classList.add('on');setTimeout(()=>$('hc').focus(),50)}
 function saveH(){const cm=parseFloat($('hc').value),d=$('hd').value;if(!d||!(cm>=50&&cm<=250)){toast('Enter a height between 50 and 250 cm');return}heights=heights.filter(x=>x.id!==cw);heights.push({id:cw||Date.now(),date:d,cm:Math.round(cm*10)/10});store();closeAll();render();toast('Height saved')}
 function delH(){heights=heights.filter(x=>x.id!==cw);store();closeAll();render();toast('Entry deleted')}
 document.querySelectorAll('#cuts button').forEach(b=>b.onclick=()=>{cut=b.dataset.c;store();render()});
 const hv=(a,b)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(b.la-a.la),dn=r(b.lo-a.lo),h=Math.sin(dl/2)**2+Math.cos(r(a.la))*Math.cos(r(b.la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 function gpxText(){const tx=$('gt').value.trim();if(tx)readGpx(tx);else toast('Paste the GPX text first')}
-$('gx').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>readGpx(rd.result);rd.onerror=()=>toast('Could not open that file');rd.readAsText(f);e.target.value=''});
-function readGpx(txt){try{
-  const x=new DOMParser().parseFromString(txt,'application/xml'),t=[...(x.querySelectorAll('trkpt').length?x.querySelectorAll('trkpt'):x.querySelectorAll('rtept'))].map(n=>({la:+n.getAttribute('lat'),lo:+n.getAttribute('lon'),t:(n.querySelector('time')||{}).textContent}));
-  if(t.length<2||t.some(p=>isNaN(p.la)||isNaN(p.lo)))throw 0;let km=0;for(let i=1;i<t.length;i++)km+=hv(t[i-1],t[i]);$('km').value=km.toFixed(2);
-  const a=t[0].t,b=t[t.length-1].t;if(a&&b){const m=(new Date(b)-new Date(a))/6e4;if(m>0)$('min').value=Math.round(m)}
-  const nm=x.querySelector('trk > name,metadata > name');if(nm&&!$('rt').value)$('rt').value=nm.textContent.trim();
-  const st=Math.max(1,Math.floor(t.length/120));path=t.filter((_,i)=>i%st===0||i===t.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)]);hint();toast('Route imported')}catch(err){toast('Could not read that GPX file')}}
+function parseGpx(txt){
+  const x=new DOMParser().parseFromString(txt,'application/xml');
+  const pt=n=>{const e=n.querySelector('ele'),tm=n.querySelector('time');return{la:+n.getAttribute('lat'),lo:+n.getAttribute('lon'),e:e?parseFloat(e.textContent):null,t:tm?Date.parse(tm.textContent):NaN}};
+  let G=[...x.querySelectorAll('trkseg')].map(sg=>[...sg.querySelectorAll('trkpt')].map(pt)).filter(a=>a.length);
+  if(!G.length){const r=[...x.querySelectorAll('rtept')].map(pt);if(r.length)G=[r]}
+  const all=G.flat();
+  if(all.length<2||all.some(p=>isNaN(p.la)||isNaN(p.lo)))throw 0;
+  const timed=all.every(p=>!isNaN(p.t));
+  // Each segment (a pause starts a new one) is measured on its own, so no distance or time is added across a pause.
+  // hv() returns km, so d is converted to metres. Steps faster than MAXV m/s are GPS glitches and are dropped.
+  let m=0,mv=0,mvLast=0,nk=1,act=0;const sp=[],keep=[],MAXV=5;
+  G.forEach(seg=>{let last=seg[0];keep.push(last);if(timed)act+=(seg[seg.length-1].t-seg[0].t)/1000;
+    for(let i=1;i<seg.length;i++){const p=seg[i],d=hv(last,p)*1000;
+      if(!timed){keep.push(p);m+=d;last=p;continue}
+      const dt=(p.t-last.t)/1000;if(dt<=0)continue;const v=d/dt;
+      if(v>MAXV)continue;
+      keep.push(p);last=p;
+      if(v<0.5)continue; // standing still
+      m+=d;mv+=dt;if(m>=nk*1000){sp.push(+((mv-mvLast)/60).toFixed(2));mvLast=mv;nk++}}});
+  // Climb: smooth the altitude, then only count rises of 3 m or more from the lowest point so GPS noise adds nothing.
+  const E=keep.map(p=>p.e).filter(v=>v!=null&&!isNaN(v));let up=null;
+  if(E.length>5){const S=E.map((_,i)=>{let a=0,c=0;for(let j=Math.max(0,i-7);j<=Math.min(E.length-1,i+7);j++){a+=E[j];c++}return a/c});up=0;let lo=S[0];for(const v of S){if(v<lo)lo=v;else if(v-lo>=3){up+=v-lo;lo=v}}up=Math.round(up)}
+  const st=Math.max(1,Math.floor(keep.length/400)),nm=x.querySelector('trk > name,metadata > name');
+  return{km:m/1000,min:timed?mv/60:null,el:timed?act/60:null,up,sp,name:nm&&!/^\d{4}-\d{2}-\d{2}/.test(nm.textContent.trim())?nm.textContent.trim():'',t0:timed?new Date(all[0].t).toISOString():'',date:timed?ymd(new Date(all[0].t)):null,
+    path:keep.filter((_,i)=>i%st===0||i===keep.length-1).map(p=>[+p.la.toFixed(5),+p.lo.toFixed(5)])}}
+function readGpx(txt){try{const g=parseGpx(txt);
+  $('km').value=g.km.toFixed(2);if(g.min)$('min').value=Math.round(g.min*10)/10;if(g.date)$('dt').value=g.date;
+  if(g.name&&!$('rt').value)$('rt').value=g.name;path=g.path;
+  ext={sp:g.sp.length?g.sp:undefined,up:g.up!=null?g.up:undefined,el:g.el!=null?Math.round(g.el*10)/10:undefined,t0:g.t0||undefined};
+  hint();toast(g.t0&&walks.some(w=>w.t0===g.t0)?'Heads up: this walk is already logged':'Route imported')}catch(err){toast('Could not read that GPX file')}}
+$('gx').addEventListener('change',async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+  if(fs.length===1){const r=new FileReader();r.onload=()=>readGpx(r.result);r.onerror=()=>toast('Could not open that file');r.readAsText(fs[0]);return}
+  let ok=0,dup=0,bad=0;
+  for(const f of fs){try{const g=parseGpx(await f.text());
+    if(g.t0&&walks.some(w=>w.t0===g.t0)){dup++;continue}
+    const m=g.min||0;if(!(m>0)){bad++;continue}
+    const date=g.date,k=Math.round(g.km*100)/100,cal=estCal(m,k,date),o={id:Date.now()+ok,date,min:Math.round(m*10)/10,km:k,cal:cal||0,est:cal!=null,route:g.name,path:g.path,t0:g.t0};
+    if(g.sp.length)o.sp=g.sp;if(g.up!=null)o.up=g.up;if(g.el!=null)o.el=Math.round(g.el*10)/10;
+    walks.push(o);ok++}catch(err){bad++}}
+  store();render();closeAll();toast(ok+' imported'+(dup?', '+dup+' duplicate'+(dup>1?'s':'')+' skipped':'')+(bad?', '+bad+' could not be imported':''))});
 ['min','km','dt'].forEach(i=>$(i).addEventListener('input',hint));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+tab));render();scrollTo(0,0)});
 document.querySelectorAll('#per button').forEach(b=>b.onclick=()=>{per=b.dataset.p;document.querySelectorAll('#per button').forEach(x=>x.classList.toggle('on',x===b));render()});
-[$('ov'),$('ow'),$('oh'),$('os'),$('orr')].forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeAll()}));
+[$('ov'),$('ow'),$('oh'),$('os'),$('oa')].forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeAll()}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
 let tt;function toast(m){const e=$('toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2400)}
 render();
-window.App={get:()=>({walks,weights,heights,routes}),set:(c,v)=>{if(c==='walks')walks=v;else if(c==='weights')weights=v;else if(c==='routes')routes=v;else heights=v;try{localStorage.setItem('glass_routes_v2',JSON.stringify(routes));localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights))}catch(e){}render()}};
-function exportData(){const d={app:'glass-walk',v:2,exported:new Date().toISOString(),walks,weights,heights,routes};
+window.App={get:()=>({walks,weights,heights}),set:(c,v)=>{if(c==='walks')walks=v;else if(c==='weights')weights=v;else heights=v;try{localStorage.setItem(SK,JSON.stringify(walks));localStorage.setItem(WK,JSON.stringify(weights));localStorage.setItem('glass_heights_v2',JSON.stringify(heights))}catch(e){}render()}};
+function exportData(){const d={app:'glass-walk',v:2,exported:new Date().toISOString(),walks,weights,heights};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download='glass-walk-backup-'+ymd(today())+'.json';
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Backup downloaded')}
 $('bi').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{
   const d=JSON.parse(rd.result);if(d.app!=='glass-walk')throw 0;let n=0;
-  [['walks',walks,'min'],['weights',weights,'kg'],['heights',heights,'cm'],['routes',routes,'km']].forEach(([k,arr,f2])=>{const have=new Set(arr.map(x=>String(x.id)));
+  [['walks',walks,'min'],['weights',weights,'kg'],['heights',heights,'cm']].forEach(([k,arr,f2])=>{const have=new Set(arr.map(x=>String(x.id)));
     (Array.isArray(d[k])?d[k]:[]).forEach(x=>{if(x&&x.id!=null&&typeof x.date==='string'&&typeof x[f2]==='number'&&!have.has(String(x.id))){arr.push(x);n++}})});
   store();render();toast(n+' items imported')}catch(err){toast('That isn’t a Glass Walk backup')}};rd.readAsText(f);e.target.value=''});
 function wsUi(){document.querySelectorAll('#wsg button').forEach(b=>b.classList.toggle('on',+b.dataset.w===WS))}
 document.querySelectorAll('#wsg button').forEach(b=>b.onclick=()=>{WS=+b.dataset.w;try{localStorage.setItem('glass_ws',WS)}catch(e){}wsUi();render()});
 wsUi();
-// ---- Real map (Leaflet + OpenStreetMap tiles, community foot-routing server) ----
-// To switch routing provider later, replace routeUrl() and the response handling in plan().
-const routeUrl=p=>'https://routing.openstreetmap.de/routed-foot/route/v1/foot/'+p.map(q=>q[1].toFixed(6)+','+q[0].toFixed(6)).join(';')+'?overview=full&geometries=geojson';
-let map,lay,pts=[],res=null,rid=0,lf=null;
-const simp=a=>{const s=Math.max(1,Math.floor(a.length/300));return a.filter((_,i)=>i%s===0||i===a.length-1).map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)])};
-function mapInit(){
-  if(map){setTimeout(()=>map.invalidateSize(),50);return}
-  if(window.L){buildMap();return}
-  if(lf)return;lf=1;
-  const c=document.createElement('link');c.rel='stylesheet';c.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(c);
-  const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-  sc.onload=()=>{lf=null;buildMap()};sc.onerror=()=>{lf=null;$('mi').textContent='The map needs an internet connection. Open this tab again when you are online.'};document.head.appendChild(sc)}
-function buildMap(){
-  map=L.map('map').setView([20,0],2);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(map);
-  lay=L.layerGroup().addTo(map);
-  map.on('click',e=>{pts.push([+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5)]);plan()});
-  const r=routes[routes.length-1];if(r)showRoute(r.id,true);else info()}
-function draw(line){
-  lay.clearLayers();
-  pts.forEach((p,i)=>L.marker(p,{icon:L.divIcon({className:'',html:'<i class="mk'+(i===0?' s':i===pts.length-1?' e':'')+'"></i>',iconSize:[16,16]})}).addTo(lay));
-  if(line&&line.length){const l=L.polyline(line,{color:'#8b7cff',weight:5,opacity:.9}).addTo(lay);map.fitBounds(l.getBounds(),{padding:[30,30]})}}
-function info(n){$('mi').textContent=pts.length<2&&!res?(pts.length?'Tap the map to add the next point.':'Tap My location, then tap the map to set a start, waypoints and an end.'):pts.length+' points · '+r1(res.km)+' km · about '+dur(res.min)+(n||'')}
-async function plan(){
-  const my=++rid;draw(null);
-  if(pts.length<2){res=null;info();return}
-  $('mi').textContent='Finding a walking route…';let line,km=0,min=0,note='';
-  try{const j=await (await fetch(routeUrl(pts))).json(),q=j.routes[0];line=q.geometry.coordinates.map(c=>[c[1],c[0]]);km=q.distance/1000;min=q.duration/60}
-  catch(e){line=pts.slice();for(let i=1;i<pts.length;i++)km+=hv({la:pts[i-1][0],lo:pts[i-1][1]},{la:pts[i][0],lo:pts[i][1]});min=km/5*60;note=' (straight lines, the routing service is unavailable)'}
-  if(my!==rid)return;res={line,km,min,pts:pts.slice()};draw(line);info(note)}
-function undo(){if(!map)return;pts.pop();plan()}
-function clr(){if(!map)return;pts=[];plan()}
-function locate(){if(!map)return;navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],15),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000}):toast('Location is not available')}
-function showRoute(id,quiet){const r=routes.find(x=>x.id===id);if(!r||!map)return;rid++;pts=r.pts.map(p=>p.slice());res={line:r.line,km:r.km,min:r.min,pts:r.pts};draw(r.line);info();if(!quiet)$('map').scrollIntoView({behavior:'smooth',block:'center'})}
-function openSave(){if(!res){toast('Add at least two points first');return}$('rh').textContent=r1(res.km)+' km · about '+dur(res.min);$('rn').value='';$('orr').classList.add('on');setTimeout(()=>$('rn').focus(),50)}
-function saveRoute(){const n=$('rn').value.trim();if(!n){toast('Give the route a name');return}
-  routes.push({id:Date.now(),name:n,km:Math.round(res.km*100)/100,min:Math.round(res.min),pts:res.pts,line:simp(res.line)});store();closeAll();render();toast('Route saved')}
-function delRoute(id){routes=routes.filter(r=>r.id!==id);store();render();toast('Route deleted')}
-function logRoute(id){const r=routes.find(x=>x.id===id);if(!r)return;openWalk(null);$('rt').value=r.name;$('km').value=r.km;$('min').value=Math.round(r.min);hint()}
-function showOnMap(){const lp=[...walks].filter(w=>w.path).sort((a,b)=>b.date.localeCompare(a.date))[0];if(!lp||!map){toast('The map is not ready yet');return}
-  pts=[];res=null;rid++;lay.clearLayers();const l=L.polyline(lp.path,{color:'#3fd9b6',weight:5}).addTo(lay);map.fitBounds(l.getBounds(),{padding:[30,30]});
-  $('mi').textContent=(lp.route||'Imported walk')+' · '+r1(lp.km||0)+' km (imported GPX)';$('map').scrollIntoView({behavior:'smooth',block:'center'})}
-$('rt').addEventListener('change',()=>{const r=routes.find(x=>x.name.toLowerCase()===$('rt').value.trim().toLowerCase());if(r&&!$('km').value){$('km').value=r.km;hint()}});
+// ---- Explored: all walks drawn together, plus 100 m territory squares ----
+let xf='all',xm='paths';
+function xproj(){const A=walks.filter(w=>w.path&&w.path.length>1);if(!A.length)return null;
+  let sl=0,n=0;A.forEach(w=>w.path.forEach(p=>{sl+=p[0];n++}));const k=Math.cos(sl/n*Math.PI/180)*111320;
+  return A.map(w=>({w,p:w.path.map(q=>[q[1]*k,q[0]*110540])}))}
+function xcells(p){const c=new Set(),add=(x,y)=>c.add(Math.floor(x/100)+','+Math.floor(y/100));add(p[0][0],p[0][1]);
+  for(let i=1;i<p.length;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/30));for(let j=1;j<=n;j++)add(p[i-1][0]+dx*j/n,p[i-1][1]+dy*j/n)}return c}
+function explored(){
+  const cv=$('xc'),P=xproj();cv.style.display=P?'block':'none';$('xe').style.display=P?'none':'';
+  if(!P){$('p-x').innerHTML='';$('xn').textContent='';return}
+  const t=today(),from=xf==='30'?ymd(addD(t,-30)):xf==='year'?t.getFullYear()+'-01-01':'0000-00-00',wk=ymd(wst(t)),mo=ymd(t).slice(0,7)+'-01',first={},cnt={};
+  P.forEach(o=>{o.c=xcells(o.p);o.c.forEach(k=>{if(!(k in first)||o.w.date<first[k])first[k]=o.w.date;if(o.w.date>=from)cnt[k]=(cnt[k]||0)+1})});
+  const keys=Object.keys(cnt),fk=Object.keys(first);
+  $('p-x').innerHTML=[['Squares explored',keys.length],['Area covered',(keys.length*0.01).toFixed(2)+' km²'],['New this week',fk.filter(k=>first[k]>=wk).length],['New this month',fk.filter(k=>first[k]>=mo).length]].map(x=>'<div><span><small>'+x[0]+'</small><b>'+x[1]+'</b></span></div>').join('');
+  $('xn').textContent=xm==='sq'?'Each square is 100 m wide. Brighter squares are visited more often, and teal ones are new this week.':'Brighter lines are paths you repeat. Violet is older, teal is newer.';
+  const dpr=window.devicePixelRatio||1,cw=cv.clientWidth,ch=340;cv.width=cw*dpr;cv.height=ch*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);g.fillStyle='#12101c';g.fillRect(0,0,cw,ch);
+  const sel=P.filter(o=>o.w.date>=from);
+  if(!sel.length){g.fillStyle='#8a84a8';g.font='13px sans-serif';g.textAlign='center';g.fillText('No walks in this period',cw/2,ch/2);return}
+  let x0=1e12,x1=-1e12,y0=1e12,y1=-1e12;sel.forEach(o=>o.p.forEach(q=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])}));
+  const pad=24,s=Math.min((cw-2*pad)/Math.max(x1-x0,600),(ch-2*pad)/Math.max(y1-y0,600)),ox=(cw-(x1-x0)*s)/2,oy=(ch-(y1-y0)*s)/2,X=q=>ox+(q[0]-x0)*s,Y=q=>ch-oy-(q[1]-y0)*s;
+  if(xm==='sq'){keys.forEach(k=>{const a=k.split(',').map(Number),sz=Math.max(100*s-1,1);g.fillStyle=first[k]>=wk?'rgba(63,217,182,.85)':'rgba(139,124,255,'+Math.min(.3+.15*cnt[k],.95)+')';g.fillRect(ox+(a[0]*100-x0)*s+.5,ch-oy-((a[1]+1)*100-y0)*s+.5,sz,sz)})}
+  else{g.globalCompositeOperation='lighter';g.lineCap='round';g.lineJoin='round';
+    const ds=sel.map(o=>o.w.date).sort(),d0=prs(ds[0]),sp=(prs(ds[ds.length-1])-d0)||1;
+    [[7,.07],[2.2,.38]].forEach(l=>sel.forEach(o=>{const f=(prs(o.w.date)-d0)/sp;g.strokeStyle='rgba('+Math.round(139-76*f)+','+Math.round(124+93*f)+','+Math.round(255-73*f)+','+l[1]+')';g.lineWidth=l[0];
+      g.beginPath();o.p.forEach((q,i)=>i?g.lineTo(X(q),Y(q)):g.moveTo(X(q),Y(q)));g.stroke()}));g.globalCompositeOperation='source-over'}}
+document.querySelectorAll('#xf button,#xmd button').forEach(b=>b.onclick=()=>{if(b.parentNode.id==='xf')xf=b.dataset.v;else xm=b.dataset.v;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));explored()});
+addEventListener('resize',()=>{if(tab==='routes')explored()});
+// ---- Route art: a shareable poster of one walk ----
+let artW=null;
+function openArt(){artW=walks.find(x=>x.id===cw);if(!artW||!artW.path){toast('This walk has no route');return}
+  $('ov').classList.remove('on');$('ash').style.display=navigator.canShare?'':'none';$('oa').classList.add('on');drawArt()}
+function trimPath(P,m){let tot=0;const cum=[0];for(let i=1;i<P.length;i++){tot+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);cum.push(tot)}
+  const t=tot<500?tot*.15:m,r=P.filter((_,i)=>cum[i]>=t&&cum[i]<=tot-t);return r.length>1?r:P}
+function artTitle(w){const n=(w.route||'').trim();if(n&&!/^\d{4}-\d{2}-\d{2}/.test(n))return n;
+  const h=w.t0?new Date(w.t0).getHours():-1;return h<0?'Walk':h<5?'Night walk':h<12?'Morning walk':h<17?'Afternoon walk':h<21?'Evening walk':'Night walk'}
+const kmFmt=k=>k<1?(Math.round(k*100)/100).toFixed(2):r1(k);
+async function drawArt(){
+  const w=artW;if(!w)return;
+  try{if(document.fonts&&document.fonts.load)await document.fonts.load('600 40px Inter')}catch(e){}
+  const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src='icon-192.png'});
+  const cv=$('ac'),g=cv.getContext('2d'),W=1080,H=1350,F='Inter, system-ui, -apple-system, sans-serif',trim=$('at').checked;
+  g.globalAlpha=1;g.fillStyle='#161221';g.fillRect(0,0,W,H);
+  g.strokeStyle='rgba(255,255,255,.05)';g.lineWidth=2;
+  [[170,230],[900,1000]].forEach((c,k)=>{for(let r=1;r<=9;r++){g.beginPath();for(let a=0;a<=60;a++){const t=a/60*6.2832,q=r*46+22*Math.sin(t*3+k+r*.35)+14*Math.sin(t*5+r*.5),x=c[0]+q*1.3*Math.cos(t),y=c[1]+q*Math.sin(t);a?g.lineTo(x,y):g.moveTo(x,y)}g.closePath();g.stroke()}});
+  const ml=w.path.reduce((a,p)=>a+p[0],0)/w.path.length,k=Math.cos(ml*Math.PI/180)*111320;
+  let P=w.path.map(q=>[q[1]*k,q[0]*110540]);if(trim)P=trimPath(P,200);
+  let x0=1e12,x1=-1e12,y0=1e12,y1=-1e12;P.forEach(q=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])});
+  const bx=110,by=330,bw=860,bh=700,s=Math.min(bw/Math.max(x1-x0,50),bh/Math.max(y1-y0,50)),ox=bx+(bw-(x1-x0)*s)/2,oy=by+(bh-(y1-y0)*s)/2,X=q=>ox+(q[0]-x0)*s,Y=q=>oy+(y1-q[1])*s;
+  const gr=g.createLinearGradient(bx,by+bh,bx+bw,by);gr.addColorStop(0,'#8b7cff');gr.addColorStop(1,'#3fd9b6');
+  g.lineCap='round';g.lineJoin='round';g.strokeStyle=gr;
+  [[26,.08],[12,.22],[6,1]].forEach(l=>{g.globalAlpha=l[1];g.lineWidth=l[0];g.beginPath();P.forEach((q,i)=>i?g.lineTo(X(q),Y(q)):g.moveTo(X(q),Y(q)));g.stroke()});
+  g.globalAlpha=1;
+  if(!trim){[[P[0],'#3fd9b6'],[P[P.length-1],'#8b7cff']].forEach(d=>{g.beginPath();g.arc(X(d[0]),Y(d[0]),15,0,6.2832);g.fillStyle=d[1];g.fill();g.lineWidth=5;g.strokeStyle='#fff';g.stroke()})}
+  g.textAlign='left';g.fillStyle='#eef1f6';const title=artTitle(w);let fs=80;g.font='600 '+fs+'px '+F;while(g.measureText(title).width>900&&fs>36){fs-=4;g.font='600 '+fs+'px '+F}
+  g.fillText(title,90,180);g.font='400 36px '+F;g.fillStyle='rgba(238,241,246,.6)';g.fillText(fd(prs(w.date),{day:'numeric',month:'long',year:'numeric'}),90,240);
+  g.textAlign='center'; // four equal 225 px slots, each value and label centred, thin dividers between them
+  [[kmFmt(w.km),'DISTANCE KM'],[dur(w.min),'TIME'],[pace(w.min,w.km),'PACE PER KM'],[w.km>0&&w.min>0?(w.km/(w.min/60)).toFixed(1):'–','AVG KM/H']].forEach((c,i)=>{const cx=90+225*i+112.5;
+    g.font='600 64px '+F;g.fillStyle='#eef1f6';g.fillText(c[0],cx,1160);g.font='400 22px '+F;g.fillStyle='rgba(238,241,246,.5)';g.fillText(c[1],cx,1204);
+    if(i){g.fillStyle='rgba(255,255,255,.1)';g.fillRect(90+225*i-1,1100,2,116)}});g.textAlign='left';
+  if(im)g.drawImage(im,90,1252,60,60);g.font='500 30px '+F;g.fillStyle='rgba(238,241,246,.7)';g.fillText('Glass Walk',im?168:90,1292)}
+function saveArt(){$('ac').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='glass-walk-route-'+artW.date+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Image saved')},'image/png')}
+function shareArt(){$('ac').toBlob(async b=>{const f=new File([b],'glass-walk-route.png',{type:'image/png'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'My walk'});else toast('Sharing is not supported here. Use Save image.')}catch(e){}},'image/png')}
 function openSync(){$('os').classList.add('on')}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
@@ -350,7 +404,7 @@ import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} f
 import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyB3C9DhIW0tWvFqutFhy3STOLcOuVNurz4",authDomain:"glass-walk-416eb.firebaseapp.com",projectId:"glass-walk-416eb",storageBucket:"glass-walk-416eb.firebasestorage.app",messagingSenderId:"263227289446",appId:"1:263227289446:web:0eba3eb33d81188c9462a7"});
 const auth=getAuth(app),db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
-const $=id=>document.getElementById(id),cols=['walks','weights','heights','routes'],ser=x=>JSON.stringify(x,Object.keys(x).sort());
+const $=id=>document.getElementById(id),cols=['walks','weights','heights'],ser=x=>JSON.stringify(x,Object.keys(x).sort());
 // Firestore cannot store arrays of arrays, so a walk's GPX path is saved as a JSON string.
 const JF=['path','line','pts'];
 const enc=x=>{const o={...x};JF.forEach(k=>{if(o[k]){o[k+'Json']=JSON.stringify(o[k]);delete o[k]}});return o};
